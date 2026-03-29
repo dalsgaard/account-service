@@ -11,7 +11,8 @@
     "cdk": "cdk",
     "gen:types": "openapi-typescript openapi/account.oas.yaml -o openapi/types.ts",
     "bootstrap": "cdk bootstrap",
-    "get-api-url": "bash scripts/get-api-url.sh"
+    "get-api-url": "bash scripts/get-api-url.sh",
+    "update-oas-server": "bash scripts/update-oas-server.sh"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",

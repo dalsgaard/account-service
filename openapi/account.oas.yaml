@@ -6,7 +6,7 @@ servers:
   - url: https://{apiId}.execute-api.eu-north-1.amazonaws.com
     variables:
       apiId:
-        default: unknown
+        default: 6wz68m95ij
 paths:
   /accounts:
     get:
