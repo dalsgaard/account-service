@@ -8,19 +8,30 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "gen:types": "openapi-typescript openapi/account.oas.yaml -o openapi/types.ts",
+    "bootstrap": "cdk bootstrap",
+    "get-api-url": "bash scripts/get-api-url.sh"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
+    "aws-cdk": "^2.1114.1",
+    "esbuild": "^0.27.4",
     "jest": "^30",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.8.1",
     "ts-jest": "^29",
-    "aws-cdk": "2.1114.1",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1019.0",
+    "@aws-sdk/client-sns": "^3.1019.0",
+    "@aws-sdk/util-dynamodb": "^3.996.2",
     "aws-cdk-lib": "^2.244.0",
-    "constructs": "^10.5.0"
+    "constructs": "^10.5.0",
+    "hono": "^4.12.9"
   }
 }
