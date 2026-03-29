@@ -50,16 +50,24 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            /** @example DK5000400440116243 */
             iban: string;
-            /** @description ISO 4217 currency code */
+            /**
+             * @description ISO 4217 currency code
+             * @example DKK
+             */
             currency: string;
             /** Format: uuid */
             customerId: string;
         };
         CreateAccount: {
             name: string;
+            /** @example DK5000400440116243 */
             iban: string;
-            /** @description ISO 4217 currency code */
+            /**
+             * @description ISO 4217 currency code
+             * @example DKK
+             */
             currency: string;
             /** Format: uuid */
             customerId: string;
