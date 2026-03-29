@@ -9,6 +9,7 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
+import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID } from 'crypto';
 
 const UUID_RE =
@@ -22,12 +23,14 @@ const dynamo = new DynamoDBClient({});
 const sns = new SNSClient({});
 const TABLE_NAME = process.env.TABLE_NAME!;
 const CREATED_TOPIC_ARN = process.env.CREATED_TOPIC_ARN!;
+const logger = new Logger({ serviceName: 'account-service' });
 
 const app = new Hono();
 
 app.get('/accounts', async (c) => {
   const result = await dynamo.send(new ScanCommand({ TableName: TABLE_NAME }));
   const accounts = (result.Items ?? []).map((item) => unmarshall(item));
+  logger.info('Listed accounts', { count: accounts.length });
   return c.json(accounts);
 });
 
@@ -42,7 +45,10 @@ app.get('/accounts/:id', async (c) => {
     }),
   );
 
-  if (!result.Item) return c.json({ error: 'Account not found' }, 404);
+  if (!result.Item) {
+    logger.warn('Account not found', { accountId: id });
+    return c.json({ error: 'Account not found' }, 404);
+  }
   return c.json(unmarshall(result.Item));
 });
 
@@ -64,6 +70,10 @@ app.post('/accounts', async (c) => {
     }),
   );
 
+  logger.info('Account created', {
+    accountId: account.id,
+    customerId: account.customerId,
+  });
   return c.json(account, 201);
 });
 
@@ -78,6 +88,7 @@ app.delete('/accounts/:id', async (c) => {
     }),
   );
 
+  logger.info('Account deleted', { accountId: id });
   return c.body(null, 204);
 });
 

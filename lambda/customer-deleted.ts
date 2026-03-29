@@ -5,10 +5,12 @@ import {
   QueryCommand,
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
+import { Logger } from '@aws-lambda-powertools/logger';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
 const CUSTOMER_ID_INDEX = 'customerId-index';
+const logger = new Logger({ serviceName: 'account-service' });
 
 export const handler = async (event: SQSEvent): Promise<void> => {
   for (const record of event.Records) {
@@ -24,13 +26,20 @@ export const handler = async (event: SQSEvent): Promise<void> => {
       }),
     );
 
-    for (const item of result.Items ?? []) {
+    const accounts = result.Items ?? [];
+    logger.info('Deleting accounts for deleted customer', {
+      customerId,
+      count: accounts.length,
+    });
+
+    for (const item of accounts) {
       await client.send(
         new DeleteCommand({
           TableName: TABLE_NAME,
           Key: { id: item.id },
         }),
       );
+      logger.info('Account deleted', { accountId: item.id, customerId });
     }
   }
 };
