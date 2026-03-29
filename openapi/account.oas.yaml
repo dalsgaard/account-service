@@ -78,19 +78,41 @@ components:
       required:
         - id
         - name
+        - iban
+        - currency
+        - customerId
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
+        iban:
+          type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        customerId:
+          type: string
+          format: uuid
     CreateAccount:
       type: object
       required:
         - name
+        - iban
+        - currency
+        - customerId
       properties:
         name:
           type: string
+        iban:
+          type: string
+        currency:
+          type: string
+          description: ISO 4217 currency code
+        customerId:
+          type: string
+          format: uuid
   responses:
     BadRequest:
       description: Bad request

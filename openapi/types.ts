@@ -50,9 +50,19 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            iban: string;
+            /** @description ISO 4217 currency code */
+            currency: string;
+            /** Format: uuid */
+            customerId: string;
         };
         CreateAccount: {
             name: string;
+            iban: string;
+            /** @description ISO 4217 currency code */
+            currency: string;
+            /** Format: uuid */
+            customerId: string;
         };
     };
     responses: {
