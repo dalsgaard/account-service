@@ -23,6 +23,7 @@ const dynamo = new DynamoDBClient({});
 const sns = new SNSClient({});
 const TABLE_NAME = process.env.TABLE_NAME!;
 const CREATED_TOPIC_ARN = process.env.CREATED_TOPIC_ARN!;
+const DELETED_TOPIC_ARN = process.env.DELETED_TOPIC_ARN!;
 const logger = new Logger({ serviceName: 'account-service' });
 
 const app = new Hono();
@@ -85,6 +86,14 @@ app.delete('/accounts/:id', async (c) => {
     new DeleteItemCommand({
       TableName: TABLE_NAME,
       Key: marshall({ id }),
+    }),
+  );
+
+  await sns.send(
+    new PublishCommand({
+      TopicArn: DELETED_TOPIC_ARN,
+      Message: JSON.stringify({ id }),
+      Subject: 'account.deleted',
     }),
   );
 
