@@ -22,6 +22,12 @@ export class AccountServiceStack extends Stack {
       billingMode: BillingMode.PAY_PER_REQUEST,
     });
 
+    table.addGlobalSecondaryIndex({
+      indexName: 'customerId-all-index',
+      partitionKey: { name: 'customerId', type: AttributeType.STRING },
+      projectionType: ProjectionType.ALL,
+    });
+
 
     const createdTopic = new Topic(this, 'AccountCreatedTopic');
     const deletedTopic = new Topic(this, 'AccountDeletedTopic');
