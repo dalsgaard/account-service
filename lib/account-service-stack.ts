@@ -23,7 +23,7 @@ export class AccountServiceStack extends Stack {
     });
 
     table.addGlobalSecondaryIndex({
-      indexName: 'customerId-index',
+      indexName: 'customerId-all-index',
       partitionKey: { name: 'customerId', type: AttributeType.STRING },
       projectionType: ProjectionType.ALL,
     });

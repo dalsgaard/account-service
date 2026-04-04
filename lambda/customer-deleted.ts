@@ -9,7 +9,7 @@ import { Logger } from '@aws-lambda-powertools/logger';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
-const CUSTOMER_ID_INDEX = 'customerId-index';
+const CUSTOMER_ID_INDEX = 'customerId-all-index';
 const logger = new Logger({ serviceName: 'account-service' });
 
 export const handler = async (event: SQSEvent): Promise<void> => {

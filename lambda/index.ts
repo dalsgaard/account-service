@@ -37,7 +37,7 @@ app.get('/accounts', async (c) => {
     const result = await dynamo.send(
       new QueryCommand({
         TableName: TABLE_NAME,
-        IndexName: 'customerId-index',
+        IndexName: 'customerId-all-index',
         KeyConditionExpression: 'customerId = :customerId',
         ExpressionAttributeValues: marshall({ ':customerId': customerId }),
       }),
