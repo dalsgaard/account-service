@@ -8,7 +8,10 @@ import { AttributeType, BillingMode, ProjectionType, Table } from 'aws-cdk-lib/a
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { SqsSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Queue } from 'aws-cdk-lib/aws-sqs';
+import { Bucket } from 'aws-cdk-lib/aws-s3';
+import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
+import * as path from 'path';
 
 export class AccountServiceStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -22,7 +25,7 @@ export class AccountServiceStack extends Stack {
     table.addGlobalSecondaryIndex({
       indexName: 'customerId-index',
       partitionKey: { name: 'customerId', type: AttributeType.STRING },
-      projectionType: ProjectionType.KEYS_ONLY,
+      projectionType: ProjectionType.ALL,
     });
 
     const createdTopic = new Topic(this, 'AccountCreatedTopic');
@@ -85,11 +88,28 @@ export class AccountServiceStack extends Stack {
 
     new CfnOutput(this, 'ApiUrl', {
       value: api.apiEndpoint,
+      exportName: 'AccountServiceStack-ApiUrl',
     });
 
     new CfnOutput(this, 'AccountDeletedTopicArn', {
       value: deletedTopic.topicArn,
       exportName: 'AccountServiceStack-AccountDeletedTopicArn',
+    });
+
+    const specsBucket = Bucket.fromBucketName(
+      this,
+      'OpenApiSpecsBucket',
+      Fn.importValue('CustomerServiceStack-OpenApiSpecsBucketName'),
+    );
+
+    new BucketDeployment(this, 'UploadOpenApiSpec', {
+      sources: [
+        Source.asset(path.join(__dirname, '../openapi'), {
+          exclude: ['types.ts', 'types.js', 'types.d.ts'],
+        }),
+      ],
+      destinationBucket: specsBucket,
+      destinationKeyPrefix: 'account-service',
     });
   }
 }

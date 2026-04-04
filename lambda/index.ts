@@ -6,6 +6,7 @@ import {
   GetItemCommand,
   DeleteItemCommand,
   ScanCommand,
+  QueryCommand,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
@@ -29,6 +30,23 @@ const logger = new Logger({ serviceName: 'account-service' });
 const app = new Hono();
 
 app.get('/accounts', async (c) => {
+  const customerId = c.req.query('customerId');
+
+  if (customerId) {
+    if (!isUuid(customerId)) return c.json({ error: 'Invalid customerId' }, 400);
+    const result = await dynamo.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        IndexName: 'customerId-index',
+        KeyConditionExpression: 'customerId = :customerId',
+        ExpressionAttributeValues: marshall({ ':customerId': customerId }),
+      }),
+    );
+    const accounts = (result.Items ?? []).map((item) => unmarshall(item));
+    logger.info('Listed accounts by customer', { customerId, count: accounts.length });
+    return c.json(accounts);
+  }
+
   const result = await dynamo.send(new ScanCommand({ TableName: TABLE_NAME }));
   const accounts = (result.Items ?? []).map((item) => unmarshall(item));
   logger.info('Listed accounts', { count: accounts.length });
