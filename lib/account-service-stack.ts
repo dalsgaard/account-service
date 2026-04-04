@@ -30,6 +30,7 @@ export class AccountServiceStack extends Stack {
 
 
     const createdTopic = new Topic(this, 'AccountCreatedTopic');
+    const updatedTopic = new Topic(this, 'AccountUpdatedTopic');
     const deletedTopic = new Topic(this, 'AccountDeletedTopic');
 
     const customerDeletedQueue = new Queue(this, 'CustomerDeletedQueue');
@@ -51,12 +52,14 @@ export class AccountServiceStack extends Stack {
       environment: {
         TABLE_NAME: table.tableName,
         CREATED_TOPIC_ARN: createdTopic.topicArn,
+        UPDATED_TOPIC_ARN: updatedTopic.topicArn,
         DELETED_TOPIC_ARN: deletedTopic.topicArn,
       },
     });
 
     table.grantReadWriteData(handler);
     createdTopic.grantPublish(handler);
+    updatedTopic.grantPublish(handler);
     deletedTopic.grantPublish(handler);
 
     const customerDeletedHandler = new NodejsFunction(
@@ -90,6 +93,11 @@ export class AccountServiceStack extends Stack {
     new CfnOutput(this, 'ApiUrl', {
       value: api.apiEndpoint,
       exportName: 'AccountServiceStack-ApiUrl',
+    });
+
+    new CfnOutput(this, 'AccountUpdatedTopicArn', {
+      value: updatedTopic.topicArn,
+      exportName: 'AccountServiceStack-AccountUpdatedTopicArn',
     });
 
     new CfnOutput(this, 'AccountDeletedTopicArn', {

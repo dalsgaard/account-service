@@ -4,6 +4,7 @@ import {
   DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
+  UpdateItemCommand,
   DeleteItemCommand,
   ScanCommand,
   QueryCommand,
@@ -24,6 +25,7 @@ const dynamo = new DynamoDBClient({});
 const sns = new SNSClient({});
 const TABLE_NAME = process.env.TABLE_NAME!;
 const CREATED_TOPIC_ARN = process.env.CREATED_TOPIC_ARN!;
+const UPDATED_TOPIC_ARN = process.env.UPDATED_TOPIC_ARN!;
 const DELETED_TOPIC_ARN = process.env.DELETED_TOPIC_ARN!;
 const logger = new Logger({ serviceName: 'account-service' });
 
@@ -94,6 +96,42 @@ app.post('/accounts', async (c) => {
     customerId: account.customerId,
   });
   return c.json(account, 201);
+});
+
+app.patch('/accounts/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!isUuid(id)) return c.json({ error: 'Invalid id' }, 400);
+
+  const { name } = await c.req.json<{ name: string }>();
+
+  const result = await dynamo.send(
+    new UpdateItemCommand({
+      TableName: TABLE_NAME,
+      Key: marshall({ id }),
+      UpdateExpression: 'SET #name = :name',
+      ExpressionAttributeNames: { '#name': 'name' },
+      ExpressionAttributeValues: marshall({ ':name': name }),
+      ConditionExpression: 'attribute_exists(id)',
+      ReturnValues: 'ALL_NEW',
+    }),
+  );
+
+  if (!result.Attributes) {
+    return c.json({ error: 'Account not found' }, 404);
+  }
+
+  const account = unmarshall(result.Attributes);
+
+  await sns.send(
+    new PublishCommand({
+      TopicArn: UPDATED_TOPIC_ARN,
+      Message: JSON.stringify(account),
+      Subject: 'account.updated',
+    }),
+  );
+
+  logger.info('Account updated', { accountId: id });
+  return c.json(account);
 });
 
 app.delete('/accounts/:id', async (c) => {
