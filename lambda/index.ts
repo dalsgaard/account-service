@@ -12,7 +12,21 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Logger } from '@aws-lambda-powertools/logger';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
+
+function generateIban(): string {
+  // Danish IBAN: DK + 2 check digits + 4-digit bank code + 10-digit account number
+  const bankCode = '5000'; // Danske Bank sandbox
+  const accountNumber = String(randomInt(1_000_000_000, 9_999_999_999));
+  const bban = bankCode + accountNumber;
+
+  // ISO 7064 MOD-97 check digits
+  const numeric = bban + '182800'; // 'DK' = 13 18, '00' placeholder
+  const mod97 = BigInt(numeric) % 97n;
+  const checkDigits = String(98n - mod97).padStart(2, '0');
+
+  return `DK${checkDigits}${bban}`;
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -75,7 +89,7 @@ app.get('/accounts/:id', async (c) => {
 
 app.post('/accounts', async (c) => {
   const body = await c.req.json();
-  const account = { id: randomUUID(), ...body };
+  const account = { id: randomUUID(), iban: generateIban(), ...body };
 
   await dynamo.send(
     new PutItemCommand({
