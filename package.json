@@ -10,14 +10,17 @@
     "test": "jest",
     "cdk": "cdk",
     "gen:types": "openapi-typescript openapi/account.oas.yaml -o openapi/types.ts",
+    "gen:events": "asyncapi generate fromTemplate asyncapi/account.aas.yaml github:dalsgaard/asyncapi-template -o asyncapi/generated --force-write --no-interactive",
+    "validate:events": "asyncapi validate asyncapi/account.aas.yaml",
     "bootstrap": "cdk bootstrap",
     "get-api-url": "bash scripts/get-api-url.sh",
     "update-oas-server": "bash scripts/update-oas-server.sh"
   },
   "devDependencies": {
+    "@asyncapi/cli": "^6.0.0",
     "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^30",
-    "@types/node": "^24.10.1",
+    "@types/node": "^24.12.2",
     "aws-cdk": "^2.1114.1",
     "esbuild": "^0.27.4",
     "jest": "^30",

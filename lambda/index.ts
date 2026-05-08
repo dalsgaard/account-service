@@ -10,9 +10,10 @@ import {
   QueryCommand,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID, randomInt } from 'crypto';
+import { createAccountServiceClient } from '../asyncapi/generated/account-service-client';
+import type { Account } from '../asyncapi/generated/account-service';
 
 function generateIban(): string {
   // Danish IBAN: DK + 2 check digits + 4-digit bank code + 10-digit account number
@@ -36,11 +37,12 @@ function isUuid(s: string): boolean {
 }
 
 const dynamo = new DynamoDBClient({});
-const sns = new SNSClient({});
+const events = createAccountServiceClient({
+  accountCreatedTopicArn: process.env.CREATED_TOPIC_ARN!,
+  accountUpdatedTopicArn: process.env.UPDATED_TOPIC_ARN!,
+  accountDeletedTopicArn: process.env.DELETED_TOPIC_ARN!,
+});
 const TABLE_NAME = process.env.TABLE_NAME!;
-const CREATED_TOPIC_ARN = process.env.CREATED_TOPIC_ARN!;
-const UPDATED_TOPIC_ARN = process.env.UPDATED_TOPIC_ARN!;
-const DELETED_TOPIC_ARN = process.env.DELETED_TOPIC_ARN!;
 const logger = new Logger({ serviceName: 'account-service' });
 
 const app = new Hono();
@@ -88,8 +90,8 @@ app.get('/accounts/:id', async (c) => {
 });
 
 app.post('/accounts', async (c) => {
-  const body = await c.req.json();
-  const account = { id: randomUUID(), iban: generateIban(), ...body };
+  const body = await c.req.json<Omit<Account, 'id' | 'iban'>>();
+  const account: Account = { id: randomUUID(), iban: generateIban(), ...body };
 
   await dynamo.send(
     new PutItemCommand({
@@ -98,12 +100,7 @@ app.post('/accounts', async (c) => {
     }),
   );
 
-  await sns.send(
-    new PublishCommand({
-      TopicArn: CREATED_TOPIC_ARN,
-      Message: JSON.stringify(account),
-    }),
-  );
+  await events.sendAccountCreated(account);
 
   logger.info('Account created', {
     accountId: account.id,
@@ -134,15 +131,9 @@ app.patch('/accounts/:id', async (c) => {
     return c.json({ error: 'Account not found' }, 404);
   }
 
-  const account = unmarshall(result.Attributes);
+  const account = unmarshall(result.Attributes) as Account;
 
-  await sns.send(
-    new PublishCommand({
-      TopicArn: UPDATED_TOPIC_ARN,
-      Message: JSON.stringify(account),
-      Subject: 'account.updated',
-    }),
-  );
+  await events.sendAccountUpdated(account);
 
   logger.info('Account updated', { accountId: id });
   return c.json(account);
@@ -159,13 +150,7 @@ app.delete('/accounts/:id', async (c) => {
     }),
   );
 
-  await sns.send(
-    new PublishCommand({
-      TopicArn: DELETED_TOPIC_ARN,
-      Message: JSON.stringify({ id }),
-      Subject: 'account.deleted',
-    }),
-  );
+  await events.sendAccountDeleted({ id });
 
   logger.info('Account deleted', { accountId: id });
   return c.body(null, 204);
