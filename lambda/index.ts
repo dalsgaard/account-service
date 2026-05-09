@@ -12,7 +12,7 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID, randomInt } from 'crypto';
-import { createAccountServiceClient } from '../asyncapi/generated/account-service-client';
+import { createAccountServiceClient } from '../asyncapi/generated/account-service-aws-client';
 import type { Account } from '../asyncapi/generated/account-service';
 
 function generateIban(): string {
@@ -37,7 +37,7 @@ function isUuid(s: string): boolean {
 }
 
 const dynamo = new DynamoDBClient({});
-const events = createAccountServiceClient({
+const topics = createAccountServiceClient({
   accountCreatedTopicArn: process.env.CREATED_TOPIC_ARN!,
   accountUpdatedTopicArn: process.env.UPDATED_TOPIC_ARN!,
   accountDeletedTopicArn: process.env.DELETED_TOPIC_ARN!,
@@ -100,7 +100,7 @@ app.post('/accounts', async (c) => {
     }),
   );
 
-  await events.sendAccountCreated(account);
+  await topics.sendAccountCreated(account);
 
   logger.info('Account created', {
     accountId: account.id,
@@ -133,7 +133,7 @@ app.patch('/accounts/:id', async (c) => {
 
   const account = unmarshall(result.Attributes) as Account;
 
-  await events.sendAccountUpdated(account);
+  await topics.sendAccountUpdated(account);
 
   logger.info('Account updated', { accountId: id });
   return c.json(account);
@@ -150,7 +150,7 @@ app.delete('/accounts/:id', async (c) => {
     }),
   );
 
-  await events.sendAccountDeleted({ id });
+  await topics.sendAccountDeleted({ id });
 
   logger.info('Account deleted', { accountId: id });
   return c.body(null, 204);
