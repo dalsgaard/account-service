@@ -5,7 +5,7 @@ import {
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { Logger } from '@aws-lambda-powertools/logger';
-import { createCustomerDeletedHandler } from '../asyncapi/generated/account-service-handlers';
+import { createCustomerDeletedHandler } from '../asyncapi/generated/account-service-aws-handlers';
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
